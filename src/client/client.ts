@@ -72,11 +72,45 @@ scene.add(triangle)
 const helper = new VertexNormalsHelper( triangle, 1, 0x00ff00 )
 scene.add( helper )
 
-const boxGeometry = new THREE.BoxGeometry(1,1,1)
+const boxGeometry: THREE.BoxGeometry = new THREE.BoxGeometry(1,1,1)
 
-const boxMesh: THREE.Mesh = new THREE.Mesh(boxGeometry, material)
+const boxMaterial = new THREE.MeshNormalMaterial({
+    side: THREE.DoubleSide
+})
+
+const boxMesh: THREE.Mesh = new THREE.Mesh(boxGeometry, boxMaterial)
 scene.add(boxMesh)
 boxMesh.position.x = 3
+
+const tri = new THREE.Triangle(); // for re-use
+const indices = new THREE.Vector3(); // for re-use
+const outNormal = new THREE.Vector3(); // this is the output normal you need
+const midPoint = new THREE.Vector3()
+
+function getTriangles() {
+    for(let f = 0; f < boxGeometry.index!.count; f++){
+        
+        indices.fromArray(boxGeometry.index!.array, f * 3)
+        tri.setFromAttributeAndIndices(boxGeometry.attributes.position,indices.x,indices.y,indices.z)
+
+        console.log(tri.getNormal(outNormal), " << OutNormal")
+        console.log(tri.getMidpoint(midPoint), " << Midpoint")
+
+        if(isNaN(midPoint.x) || isNaN(midPoint.y) || isNaN(midPoint.z)) return
+
+        const lineMaterial = new THREE.LineBasicMaterial( { color: 0x00ff00 } )
+        const linePoints = []
+        linePoints.push( tri.getMidpoint(midPoint) )
+        linePoints.push( tri.getNormal(outNormal).add(midPoint) )
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints( linePoints )
+        const line = new THREE.Line( lineGeometry, lineMaterial )
+        boxMesh.add(line)
+    }
+        
+}
+
+getTriangles()
+
 
 window.addEventListener('resize', onWindowResize, false)
 
